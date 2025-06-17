@@ -1,0 +1,42 @@
+
+body {
+  margin: 0;
+  overflow: hidden;
+  background: #111;
+  font-family: sans-serif;
+}
+canvas {
+  display: block;
+  background-color: #87CEEB;
+}
+#ui {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  width: 100%;
+}
+#hotbar {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.slot {
+  width: 50px;
+  height: 50px;
+  background: #333;
+  border: 2px solid white;
+  text-align: center;
+  line-height: 50px;
+  font-size: 24px;
+  color: white;
+}
+.active {
+  border-color: yellow;
+}
+#health-bar, #hunger-bar {
+  font-size: 20px;
+  color: red;
+}
