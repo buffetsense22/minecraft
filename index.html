@@ -1,17 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Minecraft Clone</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8">
+  <title>Minecraft Clone V24</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<canvas id="game" width="960" height="600"></canvas>
-<div id="ui">
-  <div id="hotbar"></div>
-  <div id="health-bar">❤️❤️❤️❤️❤️</div>
-  <div id="hunger-bar">🍗🍗🍗🍗🍗</div>
-</div>
-<script src="script.js"></script>
+  <h1>Minecraft V24: Boss Waves, Furnace & Music</h1>
+  <canvas id="game" width="960" height="600"></canvas>
+  <div id="ui">
+    <div class="bar"><div id="health" class="bar-fill"></div></div>
+    <div class="bar"><div id="food" class="bar-fill food"></div></div>
+    <div id="waveInfo"></div>
+  </div>
+  <div id="inventory"></div>
+  <button onclick="saveGame()">💾 Save</button>
+  <button onclick="loadGame()">📂 Load</button>
+  <button onclick="toggleMusic()">🎵 Toggle Music</button>
+  <button onclick="shootArrow()">🏹 Shoot Arrow</button>
+  <button onclick="toggleFurnace()">🔥 Furnace</button>
+
+  <!-- Furnace UI -->
+  <div id="furnaceUI" class="hidden">
+    <h2>Furnace</h2>
+    <select id="furnaceInput"></select>
+    <select id="furnaceFuel"></select>
+    <button onclick="smelt()">Smelt</button>
+    <button onclick="closeFurnace()">❌ Close</button>
+  </div>
+
+  <audio id="mineSound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_5a76cf6b94.mp3?filename=impact-81775.mp3"></audio>
+  <audio id="bgMusic" src="https://cdn.pixabay.com/download/audio/2022/03/24/audio_b8676d8b8d.mp3?filename=medieval-theme-loop-112131.mp3" loop></audio>
+  <script src="game.js"></script>
 </body>
 </html>
