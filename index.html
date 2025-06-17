@@ -1,36 +1,211 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Minecraft Clone V24</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Anger Management Game</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to bottom, #ffdede, #ffeaea);
+      text-align: center;
+      padding: 30px;
+      user-select: none;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      color: #b30000;
+    }
+
+    #angerMeter {
+      width: 300px;
+      height: 30px;
+      border: 2px solid #000;
+      background: #ddd;
+      margin: 20px auto;
+      position: relative;
+      border-radius: 6px;
+    }
+
+    #angerFill {
+      height: 100%;
+      width: 0%;
+      background: red;
+      border-radius: 6px;
+      transition: width 0.2s ease;
+    }
+
+    #target {
+      width: 160px;
+      height: 160px;
+      background: url('https://cdn-icons-png.flaticon.com/512/2181/2181853.png') no-repeat center/contain;
+      margin: 20px auto;
+      cursor: pointer;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    #status {
+      font-size: 1.2rem;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+
+    #timer, #level, #highscore {
+      margin: 10px auto;
+      font-size: 1rem;
+      color: #444;
+    }
+
+    #breathingTip {
+      margin-top: 30px;
+      font-size: 1.1rem;
+      color: #333;
+      animation: breathing 4s ease-in-out infinite;
+    }
+
+    @keyframes breathing {
+      0% { opacity: 0.2; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.1); }
+      100% { opacity: 0.2; transform: scale(1); }
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 1rem;
+      background: #b30000;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+
+    button:hover {
+      background: #800000;
+    }
+  </style>
 </head>
 <body>
-  <h1>Minecraft V24: Boss Waves, Furnace & Music</h1>
-  <canvas id="game" width="960" height="600"></canvas>
-  <div id="ui">
-    <div class="bar"><div id="health" class="bar-fill"></div></div>
-    <div class="bar"><div id="food" class="bar-fill food"></div></div>
-    <div id="waveInfo"></div>
-  </div>
-  <div id="inventory"></div>
-  <button onclick="saveGame()">💾 Save</button>
-  <button onclick="loadGame()">📂 Load</button>
-  <button onclick="toggleMusic()">🎵 Toggle Music</button>
-  <button onclick="shootArrow()">🏹 Shoot Arrow</button>
-  <button onclick="toggleFurnace()">🔥 Furnace</button>
 
-  <!-- Furnace UI -->
-  <div id="furnaceUI" class="hidden">
-    <h2>Furnace</h2>
-    <select id="furnaceInput"></select>
-    <select id="furnaceFuel"></select>
-    <button onclick="smelt()">Smelt</button>
-    <button onclick="closeFurnace()">❌ Close</button>
+  <h1>Anger Management Game</h1>
+  <div id="angerMeter">
+    <div id="angerFill"></div>
   </div>
 
-  <audio id="mineSound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_5a76cf6b94.mp3?filename=impact-81775.mp3"></audio>
-  <audio id="bgMusic" src="https://cdn.pixabay.com/download/audio/2022/03/24/audio_b8676d8b8d.mp3?filename=medieval-theme-loop-112131.mp3" loop></audio>
-  <script src="game.js"></script>
+  <div id="target" title="Tap or click to release anger!"></div>
+
+  <div id="status">Stay calm...</div>
+  <div id="timer">Time Left: <span id="timeLeft">30</span>s</div>
+  <div id="level">Level: <span id="levelNum">1</span></div>
+  <div id="highscore">High Score (Levels): <span id="highScore">0</span></div>
+
+  <div id="breathingTip">Breathe In... Breathe Out...</div>
+
+  <button onclick="restartGame()">Restart</button>
+
+  <audio id="clickSound" src="https://www.soundjay.com/button/beep-07.wav" preload="auto"></audio>
+  <audio id="calmMusic" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" loop preload="auto"></audio>
+
+  <script>
+    let anger = 50;
+    let level = 1;
+    let timeLeft = 30;
+    let interval;
+    let increaseRate = 1;
+    let gameOver = false;
+
+    const angerFill = document.getElementById("angerFill");
+    const statusText = document.getElementById("status");
+    const timeDisplay = document.getElementById("timeLeft");
+    const levelNum = document.getElementById("levelNum");
+    const highScoreDisplay = document.getElementById("highScore");
+    const clickSound = document.getElementById("clickSound");
+    const calmMusic = document.getElementById("calmMusic");
+
+    const updateHighScore = () => {
+      let high = parseInt(localStorage.getItem("angerHighScore") || "0");
+      if (level > high) {
+        localStorage.setItem("angerHighScore", level - 1);
+      }
+      highScoreDisplay.textContent = localStorage.getItem("angerHighScore") || "0";
+    };
+
+    const updateAngerBar = () => {
+      angerFill.style.width = anger + "%";
+      if (anger <= 0) {
+        levelUp();
+      } else if (anger >= 100) {
+        endGame("Too much anger! You lost.");
+      } else {
+        statusText.textContent = anger > 70 ? "You're very angry!" : anger > 40 ? "You're getting tense." : "You're calming down.";
+      }
+    };
+
+    const levelUp = () => {
+      calmMusic.play();
+      statusText.textContent = "You are calm. Advancing to next level!";
+      clearInterval(interval);
+      setTimeout(() => {
+        level++;
+        timeLeft = 30;
+        anger = 50;
+        increaseRate += 0.5;
+        startGame();
+      }, 2000);
+    };
+
+    const endGame = (message) => {
+      gameOver = true;
+      clearInterval(interval);
+      statusText.textContent = message;
+      calmMusic.pause();
+      updateHighScore();
+    };
+
+    const startGame = () => {
+      gameOver = false;
+      levelNum.textContent = level;
+      calmMusic.pause();
+      updateAngerBar();
+      interval = setInterval(() => {
+        if (gameOver) return;
+        anger += increaseRate;
+        if (anger > 100) anger = 100;
+        timeLeft--;
+        timeDisplay.textContent = timeLeft;
+        if (timeLeft <= 0) endGame("Time’s up! You couldn’t calm down.");
+        updateAngerBar();
+      }, 1000);
+    };
+
+    const clickHandler = () => {
+      if (gameOver) return;
+      clickSound.currentTime = 0;
+      clickSound.play();
+      anger -= 5;
+      if (anger < 0) anger = 0;
+      updateAngerBar();
+    };
+
+    document.getElementById("target").addEventListener("click", clickHandler);
+    document.getElementById("target").addEventListener("touchstart", clickHandler);
+
+    const restartGame = () => {
+      level = 1;
+      anger = 50;
+      timeLeft = 30;
+      increaseRate = 1;
+      startGame();
+    };
+
+    updateHighScore();
+    startGame();
+  </script>
 </body>
 </html>
