@@ -1,0 +1,26 @@
+{
+  "en": {
+    "title": "Anger Management Game",
+    "start": "Stay calm...",
+    "angry": "You're getting tense.",
+    "next": "You calmed down. Level up!",
+    "lose": "You got too angry!",
+    "timeout": "Time's up!",
+    "time": "Time Left: ",
+    "level": "Level: ",
+    "highscore": "High Score: ",
+    "restart": "Restart"
+  },
+  "ph": {
+    "title": "Laro ng Pamamahala ng Galit",
+    "start": "Manatiling kalmado...",
+    "angry": "Mainit ang ulo mo.",
+    "next": "Kalmado ka na. Next level!",
+    "lose": "Masyado kang nagalit!",
+    "timeout": "Tapos na ang oras!",
+    "time": "Natitirang Oras: ",
+    "level": "Antas: ",
+    "highscore": "Pinakamataas na Antas: ",
+    "restart": "Ulitin"
+  }
+}
