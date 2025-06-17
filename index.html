@@ -4,22 +4,32 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Anger Management Game</title>
+  <link rel="manifest" href="manifest.json" />
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js');
+    }
+  </script>
   <style>
+    * {
+      box-sizing: border-box;
+    }
     body {
       font-family: 'Segoe UI', sans-serif;
       background: linear-gradient(to bottom, #ffdede, #ffeaea);
       text-align: center;
-      padding: 30px;
+      padding: 20px;
       user-select: none;
+      margin: 0;
     }
-
     h1 {
-      font-size: 2.5rem;
+      font-size: 2.2rem;
       color: #b30000;
+      margin-bottom: 10px;
     }
-
     #angerMeter {
-      width: 300px;
+      width: 90%;
+      max-width: 300px;
       height: 30px;
       border: 2px solid #000;
       background: #ddd;
@@ -27,7 +37,6 @@
       position: relative;
       border-radius: 6px;
     }
-
     #angerFill {
       height: 100%;
       width: 0%;
@@ -35,48 +44,52 @@
       border-radius: 6px;
       transition: width 0.2s ease;
     }
-
     #target {
-      width: 160px;
-      height: 160px;
+      width: 140px;
+      height: 140px;
       background: url('https://cdn-icons-png.flaticon.com/512/2181/2181853.png') no-repeat center/contain;
       margin: 20px auto;
       cursor: pointer;
       animation: pulse 1.5s infinite;
     }
-
     @keyframes pulse {
       0%, 100% { transform: scale(1); }
       50% { transform: scale(1.05); }
     }
-
     #status {
-      font-size: 1.2rem;
+      font-size: 1.1rem;
       margin-top: 10px;
       font-weight: bold;
     }
-
     #timer, #level, #highscore {
       margin: 10px auto;
       font-size: 1rem;
       color: #444;
     }
-
     #breathingTip {
-      margin-top: 30px;
-      font-size: 1.1rem;
+      margin-top: 20px;
+      font-size: 1.05rem;
       color: #333;
       animation: breathing 4s ease-in-out infinite;
     }
-
     @keyframes breathing {
       0% { opacity: 0.2; transform: scale(1); }
       50% { opacity: 1; transform: scale(1.1); }
       100% { opacity: 0.2; transform: scale(1); }
     }
-
+    .calm-tool {
+      margin: 8px;
+      display: inline-block;
+      cursor: pointer;
+      font-size: 1rem;
+      padding: 10px 16px;
+      background: #98e0c9;
+      border: none;
+      border-radius: 8px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.2);
+    }
     button {
-      padding: 10px 20px;
+      padding: 12px 24px;
       font-size: 1rem;
       background: #b30000;
       color: #fff;
@@ -85,66 +98,47 @@
       cursor: pointer;
       margin-top: 20px;
     }
-
     button:hover {
       background: #800000;
     }
   </style>
 </head>
 <body>
-
   <h1>Anger Management Game</h1>
-  <div id="angerMeter">
-    <div id="angerFill"></div>
-  </div>
-
+  <div id="angerMeter"><div id="angerFill"></div></div>
   <div id="target" title="Tap or click to release anger!"></div>
-
   <div id="status">Stay calm...</div>
   <div id="timer">Time Left: <span id="timeLeft">30</span>s</div>
   <div id="level">Level: <span id="levelNum">1</span></div>
   <div id="highscore">High Score (Levels): <span id="highScore">0</span></div>
-
   <div id="breathingTip">Breathe In... Breathe Out...</div>
-
+  <div>
+    <button class="calm-tool" onclick="useTool('breathe')">🧘 Deep Breath</button>
+    <button class="calm-tool" onclick="useTool('music')">🎵 Play Music</button>
+    <button class="calm-tool" onclick="useTool('hug')">🤗 Virtual Hug</button>
+  </div>
   <button onclick="restartGame()">Restart</button>
-
   <audio id="clickSound" src="https://www.soundjay.com/button/beep-07.wav" preload="auto"></audio>
   <audio id="calmMusic" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" loop preload="auto"></audio>
-
   <script>
-    let anger = 50;
-    let level = 1;
-    let timeLeft = 30;
-    let interval;
-    let increaseRate = 1;
-    let gameOver = false;
-
-    const angerFill = document.getElementById("angerFill");
-    const statusText = document.getElementById("status");
-    const timeDisplay = document.getElementById("timeLeft");
-    const levelNum = document.getElementById("levelNum");
-    const highScoreDisplay = document.getElementById("highScore");
-    const clickSound = document.getElementById("clickSound");
-    const calmMusic = document.getElementById("calmMusic");
+    let anger = 50, level = 1, timeLeft = 30, interval, increaseRate = 1, gameOver = false, toolCooldown = false;
+    const angerFill = document.getElementById("angerFill"), statusText = document.getElementById("status"),
+      timeDisplay = document.getElementById("timeLeft"), levelNum = document.getElementById("levelNum"),
+      highScoreDisplay = document.getElementById("highScore"), clickSound = document.getElementById("clickSound"),
+      calmMusic = document.getElementById("calmMusic");
 
     const updateHighScore = () => {
-      let high = parseInt(localStorage.getItem("angerHighScore") || "0");
-      if (level > high) {
-        localStorage.setItem("angerHighScore", level - 1);
-      }
+      const high = parseInt(localStorage.getItem("angerHighScore") || "0");
+      if (level > high) localStorage.setItem("angerHighScore", level - 1);
       highScoreDisplay.textContent = localStorage.getItem("angerHighScore") || "0";
     };
 
     const updateAngerBar = () => {
       angerFill.style.width = anger + "%";
-      if (anger <= 0) {
-        levelUp();
-      } else if (anger >= 100) {
-        endGame("Too much anger! You lost.");
-      } else {
-        statusText.textContent = anger > 70 ? "You're very angry!" : anger > 40 ? "You're getting tense." : "You're calming down.";
-      }
+      document.body.style.background = `linear-gradient(to bottom, rgb(${255 - anger * 2}, ${255 - anger}, ${255 - anger}), #ffeaea)`;
+      if (anger <= 0) levelUp();
+      else if (anger >= 100) endGame("Too much anger! You lost.");
+      else statusText.textContent = anger > 70 ? "You're very angry!" : anger > 40 ? "You're getting tense." : "You're calming down.";
     };
 
     const levelUp = () => {
@@ -160,10 +154,10 @@
       }, 2000);
     };
 
-    const endGame = (message) => {
+    const endGame = msg => {
       gameOver = true;
       clearInterval(interval);
-      statusText.textContent = message;
+      statusText.textContent = msg;
       calmMusic.pause();
       updateHighScore();
     };
@@ -186,6 +180,7 @@
 
     const clickHandler = () => {
       if (gameOver) return;
+      if ('vibrate' in navigator) navigator.vibrate([100]);
       clickSound.currentTime = 0;
       clickSound.play();
       anger -= 5;
@@ -195,6 +190,23 @@
 
     document.getElementById("target").addEventListener("click", clickHandler);
     document.getElementById("target").addEventListener("touchstart", clickHandler);
+
+    const useTool = (tool) => {
+      if (toolCooldown || gameOver) return;
+      switch (tool) {
+        case 'breathe': anger -= 10; break;
+        case 'music': calmMusic.play(); anger -= 8; break;
+        case 'hug': anger -= 12; break;
+      }
+      if (anger < 0) anger = 0;
+      updateAngerBar();
+      toolCooldown = true;
+      statusText.textContent = `Used ${tool}! Cooldown...`;
+      setTimeout(() => {
+        toolCooldown = false;
+        statusText.textContent = "Tool ready again.";
+      }, 5000);
+    };
 
     const restartGame = () => {
       level = 1;
